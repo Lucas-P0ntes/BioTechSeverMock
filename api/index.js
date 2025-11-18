@@ -1,15 +1,15 @@
 // Vercel serverless handler
 // This file is used by Vercel to handle all requests
-// Make sure dist folder exists and is built before deployment
 const path = require('path');
 const fs = require('fs');
 
 // Try multiple paths to find the server
-// This handles different Vercel deployment scenarios
+// In Vercel, the dist folder should be in the same directory as the handler
 const possiblePaths = [
-  path.join(__dirname, '../dist/server.js'),  // Relative from api/
+  path.join(__dirname, '../dist/server.js'),  // Relative from api/ (most common)
   path.join(process.cwd(), 'dist/server.js'), // From root directory
   path.resolve(__dirname, '../dist/server.js'), // Absolute relative
+  path.join(__dirname, 'dist/server.js'),     // If dist is copied to api/
 ];
 
 let app;
@@ -19,50 +19,73 @@ let loadedPath = null;
 for (const serverPath of possiblePaths) {
   try {
     const resolvedPath = path.resolve(serverPath);
-    console.log('Trying to load server from:', resolvedPath);
+    console.log('[VERCEL] Trying to load server from:', resolvedPath);
     
     // Check if file exists
     if (fs.existsSync(resolvedPath)) {
-      console.log('File exists, loading...');
+      console.log('[VERCEL] File exists, loading...');
       const server = require(resolvedPath);
       app = server.default || server;
       
-      if (app) {
+      if (app && typeof app.use === 'function') {
         loadedPath = resolvedPath;
-        console.log('✅ Server loaded successfully from:', loadedPath);
+        console.log('[VERCEL] ✅ Server loaded successfully from:', loadedPath);
         break;
+      } else {
+        console.log('[VERCEL] ⚠️ Loaded but not a valid Express app');
       }
     } else {
-      console.log('File does not exist:', resolvedPath);
+      console.log('[VERCEL] File does not exist:', resolvedPath);
     }
   } catch (error) {
-    console.log('Failed to load from:', serverPath, error.message);
+    console.log('[VERCEL] Failed to load from:', serverPath, error.message);
     continue;
   }
 }
 
-// If we couldn't load the server, create a fallback
+// If we couldn't load the server, create a fallback with detailed error
 if (!app) {
-  console.error('❌ Could not load server from any path. Tried:', possiblePaths);
+  console.error('[VERCEL] ❌ Could not load server from any path');
   const express = require('express');
   app = express();
+  
+  // Debug endpoint
+  app.get('/debug', (req, res) => {
+    const cwd = process.cwd();
+    const apiDir = __dirname;
+    res.json({
+      error: 'Server build not found',
+      message: 'The server build was not found. Please ensure "npm run build" executed successfully.',
+      triedPaths: possiblePaths.map(p => ({
+        path: p,
+        resolved: path.resolve(p),
+        exists: fs.existsSync(path.resolve(p))
+      })),
+      environment: {
+        cwd,
+        __dirname: apiDir,
+        nodeEnv: process.env.NODE_ENV,
+        vercel: process.env.VERCEL,
+      },
+      debug: {
+        distExists: fs.existsSync(path.join(cwd, 'dist')),
+        distServerExists: fs.existsSync(path.join(cwd, 'dist', 'server.js')),
+        apiExists: fs.existsSync(path.join(cwd, 'api')),
+        filesInCwd: fs.existsSync(cwd) ? fs.readdirSync(cwd).slice(0, 10) : 'cwd not found',
+        filesInApiDir: fs.existsSync(apiDir) ? fs.readdirSync(apiDir).slice(0, 10) : 'api dir not found',
+      }
+    });
+  });
   
   app.get('*', (req, res) => {
     res.status(500).json({ 
       error: 'Server not found',
       message: 'The server build was not found. Please ensure "npm run build" executed successfully.',
-      triedPaths: possiblePaths.map(p => path.resolve(p)),
-      cwd: process.cwd(),
-      __dirname: __dirname,
-      debug: {
-        distExists: fs.existsSync(path.join(process.cwd(), 'dist')),
-        apiExists: fs.existsSync(path.join(process.cwd(), 'api')),
-      }
+      debug: 'Visit /debug for detailed information'
     });
   });
 }
 
 // Export the Express app for Vercel
-// Vercel expects either the app directly or a function (req, res) => app(req, res)
 module.exports = app;
 

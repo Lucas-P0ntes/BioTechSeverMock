@@ -1,0 +1,4 @@
+# Vercel ignore file
+# This ensures dist is included in the build
+!dist/
+
