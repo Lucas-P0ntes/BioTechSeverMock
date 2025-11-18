@@ -1260,7 +1260,13 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
 
 // Start server only if not in serverless environment (Vercel)
 // Vercel will handle the serverless execution
-if (process.env.VERCEL !== '1' && !process.env.VERCEL_ENV) {
+// Check for Vercel environment variables
+const isVercel = process.env.VERCEL === '1' || 
+                 process.env.VERCEL_ENV !== undefined || 
+                 process.env.VERCEL_URL !== undefined ||
+                 typeof process.env.LAMBDA_TASK_ROOT !== 'undefined';
+
+if (!isVercel) {
   app.listen(PORT, () => {
     console.log(`🚀 Server is running on http://localhost:${PORT}`);
     console.log(`📝 Environment: ${process.env.NODE_ENV || 'development'}`);
@@ -1276,6 +1282,8 @@ if (process.env.VERCEL !== '1' && !process.env.VERCEL_ENV) {
     console.log(`\n📖 Visit http://localhost:${PORT} for API documentation`);
     console.log(`📊 Visit http://localhost:${PORT}/logs for request monitor\n`);
   });
+} else {
+  console.log('🌐 Running in serverless mode (Vercel)');
 }
 
 export default app;
