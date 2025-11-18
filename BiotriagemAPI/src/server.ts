@@ -1258,22 +1258,25 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
   res.status(500).json({ error: 'Internal server error' });
 });
 
-// Start server
-app.listen(PORT, () => {
-  console.log(`🚀 Server is running on http://localhost:${PORT}`);
-  console.log(`📝 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`\nAvailable endpoints:`);
-  console.log(`  GET    /                    - API Documentation`);
-  console.log(`  GET    /logs                - Request Monitor (Live)`);
-  console.log(`  POST   /api/login`);
-  console.log(`  GET    /api/user`);
-  console.log(`  GET    /api/patients`);
-  console.log(`  GET    /api/patients/:cpf/exams`);
-  console.log(`  POST   /api/patients/:cpf/exams`);
-  console.log(`  GET    /health`);
-  console.log(`\n📖 Visit http://localhost:${PORT} for API documentation`);
-  console.log(`📊 Visit http://localhost:${PORT}/logs for request monitor\n`);
-});
+// Start server only if not in serverless environment (Vercel)
+// Vercel will handle the serverless execution
+if (process.env.VERCEL !== '1' && !process.env.VERCEL_ENV) {
+  app.listen(PORT, () => {
+    console.log(`🚀 Server is running on http://localhost:${PORT}`);
+    console.log(`📝 Environment: ${process.env.NODE_ENV || 'development'}`);
+    console.log(`\nAvailable endpoints:`);
+    console.log(`  GET    /                    - API Documentation`);
+    console.log(`  GET    /logs                - Request Monitor (Live)`);
+    console.log(`  POST   /api/login`);
+    console.log(`  GET    /api/user`);
+    console.log(`  GET    /api/patients`);
+    console.log(`  GET    /api/patients/:cpf/exams`);
+    console.log(`  POST   /api/patients/:cpf/exams`);
+    console.log(`  GET    /health`);
+    console.log(`\n📖 Visit http://localhost:${PORT} for API documentation`);
+    console.log(`📊 Visit http://localhost:${PORT}/logs for request monitor\n`);
+  });
+}
 
 export default app;
 
