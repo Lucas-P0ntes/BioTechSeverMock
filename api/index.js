@@ -4,13 +4,12 @@ const path = require('path');
 const fs = require('fs');
 
 // Try multiple paths to find the server
-// In Vercel, the dist folder should be accessible from the handler
+// In Vercel, we copy dist to api/dist during build
 const possiblePaths = [
-  path.join(__dirname, '../dist/server.js'),  // Relative from api/ (most common)
-  path.join(process.cwd(), 'dist/server.js'), // From root directory  
-  path.resolve(__dirname, '../dist/server.js'), // Absolute relative
-  path.join(__dirname, 'dist/server.js'),     // If dist is in api/
-  path.join(process.cwd(), '../dist/server.js'), // If cwd is api/
+  path.join(__dirname, 'dist/server.js'),     // dist copied to api/dist (PRIMARY)
+  path.join(__dirname, '../dist/server.js'),  // Relative from api/ (fallback)
+  path.join(process.cwd(), 'dist/server.js'), // From root directory (fallback)
+  path.resolve(__dirname, '../dist/server.js'), // Absolute relative (fallback)
 ];
 
 let app;
