@@ -63,5 +63,6 @@ if (!app) {
 }
 
 // Export the Express app for Vercel
+// Vercel expects either the app directly or a function (req, res) => app(req, res)
 module.exports = app;
 
