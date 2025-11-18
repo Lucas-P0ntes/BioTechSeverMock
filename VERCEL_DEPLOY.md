@@ -1,109 +1,115 @@
 # Guia de Deploy na Vercel
 
-## Configuração Atual
+Este projeto está configurado para fazer deploy na Vercel como uma aplicação serverless.
 
-O projeto está configurado para funcionar na Vercel com as seguintes alterações:
+## 📋 Pré-requisitos
 
-### Arquivos Criados/Modificados:
+1. Conta na [Vercel](https://vercel.com)
+2. Vercel CLI instalado (opcional, para deploy via CLI):
+   ```bash
+   npm i -g vercel
+   ```
 
-1. **`vercel.json`** - Configuração do deploy
-2. **`api/index.js`** - Handler serverless para Vercel
-3. **`src/server.ts`** - Modificado para detectar ambiente Vercel
+## 🚀 Deploy
 
-## Configurações na Vercel
+### Opção 1: Deploy via Dashboard da Vercel (Recomendado)
 
-### 1. Build Settings
+1. Acesse [vercel.com](https://vercel.com) e faça login
+2. Clique em "Add New Project"
+3. Conecte seu repositório Git (GitHub, GitLab ou Bitbucket)
+4. A Vercel detectará automaticamente as configurações do projeto
+5. Clique em "Deploy"
 
-No painel da Vercel, configure:
+### Opção 2: Deploy via CLI
 
-- **Build Command**: `npm run build`
-- **Output Directory**: (deixe vazio)
-- **Install Command**: `npm install` (padrão)
+1. Instale a Vercel CLI:
+   ```bash
+   npm i -g vercel
+   ```
 
-### 2. Environment Variables
+2. No diretório do projeto, execute:
+   ```bash
+   vercel
+   ```
 
-Configure as variáveis de ambiente necessárias no painel da Vercel (se houver).
+3. Siga as instruções no terminal
 
-### 3. Root Directory
+4. Para fazer deploy em produção:
+   ```bash
+   vercel --prod
+   ```
 
-Se o projeto estiver em um subdiretório (ex: `BiotriagemAPI/`), configure:
+## ⚙️ Configuração
 
-- **Root Directory**: `BiotriagemAPI`
+### Variáveis de Ambiente
 
-## Estrutura do Projeto
+Configure as variáveis de ambiente no dashboard da Vercel:
+
+1. Acesse o projeto na Vercel
+2. Vá em "Settings" > "Environment Variables"
+3. Adicione as variáveis necessárias:
+   - `NODE_ENV=production`
+   - `PORT` (opcional, a Vercel define automaticamente)
+
+### Arquivos de Configuração
+
+- `vercel.json`: Configuração do projeto para a Vercel
+- `api/index.ts`: Handler serverless que exporta o app Express
+- `.vercelignore`: Arquivos e pastas ignorados no deploy
+
+## 📁 Estrutura para Vercel
 
 ```
-BiotriagemAPI/
+/
 ├── api/
-│   └── index.js          # Handler serverless para Vercel
+│   └── index.ts          # Handler serverless
 ├── src/
-│   └── server.ts         # Servidor Express
-├── dist/                 # Build output (gerado pelo npm run build)
-├── vercel.json           # Configuração Vercel
+│   └── server.ts         # App Express (não inicia servidor na Vercel)
+├── vercel.json           # Configuração da Vercel
 └── package.json
 ```
 
-## Como Funciona
+## 🔍 Como Funciona
 
-1. A Vercel executa `npm run build` que compila o TypeScript para `dist/`
-2. Todas as requisições são redirecionadas para `/api/index.js` via `vercel.json`
-3. O handler em `api/index.js` carrega o app Express de `dist/server.js`
-4. O servidor detecta que está na Vercel e não inicia `app.listen()`
+1. A Vercel detecta o arquivo `api/index.ts` como uma função serverless
+2. O `api/index.ts` importa e exporta o app Express de `src/server.ts`
+3. O `server.ts` verifica se está rodando na Vercel e não inicia o servidor HTTP
+4. A Vercel gerencia o servidor automaticamente
 
-## Troubleshooting
+## 🧪 Testar Localmente
 
-### Erro 404 Persistente
-
-1. **Verifique os logs de build na Vercel**:
-   - Vá em "Deployments" > Seu deployment > "Build Logs"
-   - Certifique-se de que `npm run build` executou com sucesso
-   - Verifique se a pasta `dist/` foi criada
-
-2. **Verifique os logs de runtime**:
-   - Vá em "Logs" no painel da Vercel
-   - Procure por erros ao carregar o servidor
-   - O handler deve mostrar "Server loaded successfully"
-
-3. **Verifique o Root Directory**:
-   - Se o projeto está em `BiotriagemAPI/`, configure o Root Directory
-   - Caso contrário, a Vercel não encontrará os arquivos
-
-4. **Teste localmente**:
-   ```bash
-   npm run build
-   node api/index.js
-   ```
-
-### Erro "Cannot find module"
-
-- Certifique-se de que todas as dependências estão em `dependencies` (não `devDependencies`)
-- Execute `npm install` antes do build
-
-### Build falha
-
-- Verifique se o TypeScript está compilando corretamente
-- Execute `npm run build` localmente para ver erros
-
-## Testando Localmente
-
-Para testar se o handler funciona:
+Para testar o comportamento serverless localmente:
 
 ```bash
-cd BiotriagemAPI
-npm run build
-node api/index.js
+vercel dev
 ```
 
-Ou use o servidor normal:
+Isso iniciará um servidor local que simula o ambiente da Vercel.
 
-```bash
-npm run dev
-```
+## 📝 Notas Importantes
 
-## Próximos Passos
+- A Vercel compila automaticamente o TypeScript
+- O limite de tamanho de request body é de 4.5MB por padrão na Vercel
+- Para aumentar o limite, você pode precisar usar Vercel Pro ou configurar no `vercel.json`
+- O endpoint `/logs` pode não funcionar corretamente em ambiente serverless devido à natureza stateless das funções
 
-1. Faça commit das alterações
-2. Faça push para o repositório
-3. A Vercel fará o deploy automaticamente
-4. Verifique os logs se ainda houver erro 404
+## 🐛 Troubleshooting
+
+### Erro: "Cannot find module"
+- Certifique-se de que todas as dependências estão no `package.json`
+- Execute `npm install` antes do deploy
+
+### Erro: "Function exceeded maximum duration"
+- A Vercel tem um limite de tempo de execução (10s no plano Hobby)
+- Considere otimizar rotas lentas ou usar Vercel Pro
+
+### Rotas não funcionam
+- Verifique se o `vercel.json` está configurado corretamente
+- Certifique-se de que `api/index.ts` está exportando o app corretamente
+
+## 🔗 Links Úteis
+
+- [Documentação da Vercel](https://vercel.com/docs)
+- [Vercel Node.js Runtime](https://vercel.com/docs/concepts/functions/serverless-functions/runtimes/node-js)
+- [Express na Vercel](https://vercel.com/guides/using-express-with-vercel)
 
