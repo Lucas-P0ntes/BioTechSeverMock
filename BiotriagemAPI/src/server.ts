@@ -1264,9 +1264,14 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
 const isVercel = process.env.VERCEL === '1' || 
                  process.env.VERCEL_ENV !== undefined || 
                  process.env.VERCEL_URL !== undefined ||
-                 typeof process.env.LAMBDA_TASK_ROOT !== 'undefined';
+                 typeof process.env.LAMBDA_TASK_ROOT !== 'undefined' ||
+                 typeof process.env.AWS_LAMBDA_FUNCTION_NAME !== 'undefined' ||
+                 process.env.NOW_REGION !== undefined; // Vercel legacy
 
-if (!isVercel) {
+// Also check if we're being required (not executed directly)
+const isRequired = require.main !== module;
+
+if (!isVercel && !isRequired) {
   app.listen(PORT, () => {
     console.log(`🚀 Server is running on http://localhost:${PORT}`);
     console.log(`📝 Environment: ${process.env.NODE_ENV || 'development'}`);
@@ -1283,7 +1288,11 @@ if (!isVercel) {
     console.log(`📊 Visit http://localhost:${PORT}/logs for request monitor\n`);
   });
 } else {
-  console.log('🌐 Running in serverless mode (Vercel)');
+  if (isVercel) {
+    console.log('🌐 Running in serverless mode (Vercel)');
+  } else if (isRequired) {
+    console.log('📦 Module loaded as dependency (serverless mode)');
+  }
 }
 
 export default app;
